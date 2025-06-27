@@ -99,9 +99,9 @@ You can translate `tea_watch` to any language.
 3.  Uncomment the lines and translate them if you want. French example:
 
     ```toml
- [strings]
- monitoring = "Surveillance"
- filter_prompt = "Filtrer: "
- total_events = "Événements"
+ 	[strings]
+	monitoring = "Surveillance"
+	filter_prompt = "Filtrer: "
+	total_events = "Événements"
     # ...etc.
- ````
+ 	```
