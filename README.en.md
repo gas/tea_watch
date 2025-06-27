@@ -60,17 +60,14 @@ This method gives you full control. You download the binary and place it whereve
 Simply run the command in your terminal:
 
 ```bash
-# Monitor the current directory
+# Monitor the current directory (will use your config.toml)
 tea_watch
 
-# Force ASCII mode (no icons)
-tea_watch --no-nerd-fonts
+# Force ASCII mode (no NF icons, will ignore config.toml)
+tea_watch --nerd-fonts=false
 
 # Monitor a specific directory
 tea_watch /path/to/your/directory
-
-# Use the flag and a directory at the same time
-tea_watch --no-nerd-fonts /path/to/your/directory
 ```
 
 ### Keybindings

@@ -58,17 +58,14 @@ Puedes descargar el binario precompilado para tu sistema operativo desde la [pá
 Simplemente ejecuta el comando en tu terminal:
 
 ```bash
-# Monitorizar el directorio actual con iconos NF
+# Monitorizar el directorio actual (usará la configuración de tu config.toml)
 tea_watch
 
-# Forzar el modo sin iconos (modo ASCII)
-tea_watch --no-nerd-fonts
+# Forzar el modo ASCII para esa ejecución (ignora el config.toml)
+tea_watch --nerd-fonts=false
 
 # Monitorizar un directorio específico
 tea_watch /ruta/a/tu/directorio
-
-# Usar el flag y un directorio a la vez
-tea_watch --no-nerd-fonts /ruta/a/tu/directorio
 ```
 
 ### Atajos de Teclado
