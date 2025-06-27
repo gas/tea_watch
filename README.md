@@ -1,7 +1,7 @@
 ![logo_tea_watch](https://github.com/user-attachments/assets/ec88ee38-1b54-40a9-9a38-fa18c29b97a1)
 
 
-tea_watch es una utilidad de terminal, escrita en Go con lipgloss, para monitorizar cambios en el sistema de ficheros en tiempo real. Muy útil para cualquier proceso que comience a modificar archivos (Gemini-cli, no miro para nadie...).
+tea_watch es una utilidad de terminal, escrita en Go con lipgloss, para monitorizar cambios en el sistema de ficheros en tiempo real. Muy útil para cualquier proceso que comience a modificar muchos archivos (Gemini-cli, no miro para nadie...).
 
 ![Captura de pantalla de tea_watch en acción](https://github.com/user-attachments/assets/fb7c343a-42cd-420c-bd1a-ff27900b8945?raw=true)
 
@@ -15,7 +15,33 @@ tea_watch es una utilidad de terminal, escrita en Go con lipgloss, para monitori
 * **Resaltado de Eventos:** Los ficheros con cambios recientes se resaltan sutilmente para llamar tu atención.
 * **Gestión Inteligente:** Agrupa eventos "atómicos" (de guardado seguro) y oculta los ficheros borrados tras un tiempo para mantener la vista limpia.
 
+## Recomendaciones
+
+* Una [Nerd Font](https://www.nerdfonts.com/) instalada y configurada en tu terminal para visualizar correctamente los iconos.
+* Si no usas Nerd Font, tea_watch puede funcionar en modo ASCII (arg *--no-nerd-font*).
+
 ## Instalación
+
+### Método 1: Script de Instalación (Linux y macOS)
+
+Esta es la forma más fácil y rápida. Simplemente copia y pega esta línea en tu terminal. El script detectará tu sistema operativo, descargará la última versión, la instalará en `/usr/local/bin` y te pedirá la contraseña si es necesario.
+
+```bash  
+curl -sSL https://raw.githubusercontent.com/gas/tea_watch/main/install.sh | bash
+```
+
+### Método 2: Con go install (para Desarrolladores y Vibe Coders)
+
+Si tienes el entorno de Go instalado en tu máquina, puedes instalar tea_watch con un solo comando. El binario se instalará en tu directorio $GOPATH/bin.
+
+```Bash
+
+go install [github.com/gas/tea_watch@latest](https://github.com/gas/tea_watch@latest)  
+```
+
+El script también añadirá el atajo de teclado ALT+w para ejecutar tea_watch en el directorio actual.
+
+### Método 3: Instalación Manual (Todas las Plataformas)
 
 Puedes descargar el binario precompilado para tu sistema operativo desde la [página de Releases](https://github.com/gas/tea_watch/releases).
 
@@ -30,11 +56,17 @@ Puedes descargar el binario precompilado para tu sistema operativo desde la [pá
 Simplemente ejecuta el comando en tu terminal:
 
 ```bash
-# Monitorizar el directorio actual
+# Monitorizar el directorio actual con iconos NF
 tea_watch
+
+# Forzar el modo sin iconos (modo ASCII)
+tea_watch --no-nerd-fonts
 
 # Monitorizar un directorio específico
 tea_watch /ruta/a/tu/directorio
+
+# Usar el flag y un directorio a la vez
+tea_watch --no-nerd-fonts /ruta/a/tu/directorio
 ```
 
 ### Atajos de Teclado

@@ -49,16 +49,37 @@ elif [ "$CURRENT_SHELL" = "zsh" ]; then
 fi
 
 if [ -n "$SHELL_CONFIG" ]; then
-    echo "Añadiendo el atajo 'Alt+w' a tu fichero ${SHELL_CONFIG}..."
-    # Añadimos una entrada para que no se duplique si se ejecuta de nuevo
-    if ! grep -q 'bind -x '"'"'"\ew": "tea_watch"'"'" /etc/inputrc "$SHELL_CONFIG"; then
-        echo '' >> "$SHELL_CONFIG"
-        echo '# Atajo para tea_watch (añadido por el script de instalación)' >> "$SHELL_CONFIG"
-        echo 'bind -x '"'"'"\ew": "tea_watch"'"' >> "$SHELL_CONFIG"
-        echo "¡Atajo añadido! Por favor, reinicia tu terminal o ejecuta 'source ${SHELL_CONFIG}'"
-    else
-        echo "El atajo ya parece estar configurado."
+    # Lógica para BASH
+    if [ "$CURRENT_SHELL" = "bash" ]; then
+        if ! grep -q 'bind -x '"'"'"\ew": "tea_watch"'"' "$SHELL_CONFIG"; then
+            echo '' >> "$SHELL_CONFIG"
+            echo '# Atajo para tea_watch (añadido por el script de instalación)' >> "$SHELL_CONFIG"
+            echo 'bind -x '"'"'"\ew": "tea_watch"'"' >> "$SHELL_CONFIG"
+            echo "¡Atajo para bash añadido!"
+        else
+            echo "El atajo de bash ya parece estar configurado."
+        fi
     fi
+
+    # Lógica para ZSH
+    if [ "$CURRENT_SHELL" = "zsh" ]; then
+        if ! grep -q "tea_watch_widget" "$SHELL_CONFIG"; then
+            echo '' >> "$SHELL_CONFIG"
+            echo '# Atajo para tea_watch (añadido por el script de instalación)' >> "$SHELL_CONFIG"
+            echo 'tea_watch_widget() {' >> "$SHELL_CONFIG"
+            echo '  tea_watch' >> "$SHELL_CONFIG"
+            echo '  zle reset-prompt' >> "$SHELL_CONFIG"
+            echo '}' >> "$SHELL_CONFIG"
+            echo 'zle -N tea_watch_widget' >> "$SHELL_CONFIG"
+            echo 'bindkey '\''\ew'\'' tea_watch_widget' >> "$SHELL_CONFIG"
+            echo "¡Atajo para zsh añadido!"
+        else
+            echo "El atajo de zsh ya parece estar configurado."
+        fi
+    fi
+
+    echo "Por favor, reinicia tu terminal o ejecuta 'source ${SHELL_CONFIG}' para aplicar los cambios."
+
 else
     echo "No se pudo detectar tu shell (bash/zsh) para configurar el atajo automáticamente."
 fi

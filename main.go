@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"os" 
@@ -18,23 +19,52 @@ import (
 const maxViewHeight = 10 // Altura máxima de la lista antes de hacer scroll
 const uiTotalHeight = 12 // Altura TOTAL de la UI (10 para la lista + 3 para cabecera/pie)
 const deleteTimeout = 30 * time.Second 
-const scrollAmount = 3 // Número de líneas a mover con cada tick de la rueda
+const scrollAmount = 1 // Número de líneas a mover con cada tick de la rueda
 
-// --- ICONOS (requiere Nerd Font) ---
 const (
 	appName1		= " tea"
 	appName2		= "watch"
-	iconApp         = " " // app icon:		      󰈈 󰙅 
-	iconFolder      = " " // dir icon
-	iconFile        = " " // file icon:	  
-	iconCreate      = " " // new event: 	 
-	iconWrite       = " " // write event: 	    󰘛 
-	iconRemove      = " " // delete event:      
-	iconRename      = " " // rename event:	  󰯏 󱈢 
-	iconChmod       = " "  // chmod event:  	
-	iconAtomic      = " "  // chmod event:     󰛕 
-	iconTotalEvents = " "
 	iconPlaceholder = " " // Espacio para alineación
+)
+
+// --- ICONOS (requiere Nerd Font) ---
+const (
+	iconAppNF         = " " // app icon:		      󰈈 󰙅 
+	iconFolderNF      = " " // dir icon
+	iconFileNF        = " " // file icon:	  
+	iconCreateNF      = " " // new event: 	 
+	iconWriteNF       = " " // write event: 	    󰘛 
+	iconRemoveNF      = " " // delete event:      
+	iconRenameNF      = " " // rename event:	  󰯏 󱈢 
+	iconChmodNF       = " "  // chmod event:  	
+	iconAtomicNF      = " "  // chmod event:     󰛕 
+	iconTotalEventsNF = " "
+)
+// --- ICONOS (no NF) ---
+const (
+	// ASCII Fallback Icons
+	iconAppASCII         = "_"
+	iconFolderASCII      = "D"
+	iconFileASCII        = "F"
+	iconCreateASCII      = "C"
+	iconWriteASCII       = "W"
+	iconRemoveASCII      = "R"
+	iconRenameASCII      = "M" // M for Move
+	iconChmodASCII       = "P" // P for Permissions
+	iconAtomicASCII      = "A"
+	iconTotalEventsASCII = "E"
+)
+var (
+	iconApp         string
+	iconFolder      string
+	iconFile        string
+	iconCreate      string
+	iconWrite       string
+	iconRemove      string
+	iconRename      string
+	iconChmod       string
+	iconAtomic      string
+	iconTotalEvents string
 )
 
 // --- ESTILOS con Lipgloss ---
@@ -78,7 +108,7 @@ var (
 			BorderBottom(true).
 			BorderForeground(lipgloss.Color("#7D56F4"))
 
-	appName = titleStyle.Render(appName1) + iconStyle.Render(iconApp) + titleStyle.Render(appName2)
+	// appName = titleStyle.Render(appName1) + iconStyle.Render(iconApp) + titleStyle.Render(appName2)
 
 	highlightedRowStyle = lipgloss.NewStyle().
 			Bold(true).
@@ -487,21 +517,21 @@ func (m *model) updateSortedPaths() {
 
 // View renderiza la interfaz de usuario.
 func (m model) View() string {
+	var b strings.Builder
+
+	// --- 1. CABECERA PERSONALIZADA (TÍTULO A LA IZQ, ICONOS A LA DER) ---
+	title := titleStyle.Render(appName1) + iconStyle.Render(iconApp) + titleStyle.Render(appName2)
+
 	// Vista inicial si aún no hay eventos (aunque ahora debería estar poblada desde el inicio)
 	if len(m.sortedPaths) == 0 {
 		return fmt.Sprintf("%s Monitoreando %s...\n%s",
-			titleStyle.Render(appName),
+			titleStyle.Render(title),
 			m.targetPath,
 			helpStyle.Render("El directorio está vacío o hubo un error. Pulsa 'q' para salir."),
 		)
 	}
 
-	var b strings.Builder
 
-	// --- 1. CABECERA PERSONALIZADA (TÍTULO A LA IZQ, ICONOS A LA DER) ---
-
-	// Título a la izquierda
-	title := titleStyle.Render(appName)
 
 	// Cabeceras de iconos a la derecha
 	iconHeaders := lipgloss.JoinHorizontal(lipgloss.Left,
@@ -671,6 +701,38 @@ func formatCounter(n int, width int) string {
 }
 
 func main() {
+	// --- GESTIÓN DE FLAGS ---
+	// 1. Definimos el flag.
+	useASCII := flag.Bool("no-nerd-fonts", false, "Usa caracteres ASCII en lugar de iconos Nerd Font.")
+	// 2. Parseamos los argumentos que recibe la aplicación.
+	flag.Parse()
+
+	// --- SELECCIÓN DE ICONOS ---
+	// 3. Elegimos qué conjunto de iconos usar.
+	if *useASCII {
+		iconApp = iconAppASCII
+		iconFolder = iconFolderASCII
+		iconFile = iconFileASCII
+		iconCreate = iconCreateASCII
+		iconWrite = iconWriteASCII
+		iconRemove = iconRemoveASCII
+		iconRename = iconRenameASCII
+		iconChmod = iconChmodASCII
+		iconAtomic = iconAtomicASCII
+		iconTotalEvents = iconTotalEventsASCII
+	} else {
+		iconApp = iconAppNF
+		iconFolder = iconFolderNF
+		iconFile = iconFileNF
+		iconCreate = iconCreateNF
+		iconWrite = iconWriteNF
+		iconRemove = iconRemoveNF
+		iconRename = iconRenameNF
+		iconChmod = iconChmodNF
+		iconAtomic = iconAtomicNF
+		iconTotalEvents = iconTotalEventsNF
+	}
+
 	// Usar el directorio actual si no se especifica otro
 	dir := "."
 	if len(os.Args) > 1 {
