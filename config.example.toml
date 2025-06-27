@@ -1,0 +1,11 @@
+nerd_fonts = true
+
+[strings]
+# monitoring    = "Monitoring"
+# filter_prompt  = "Filter: "
+# help_nav       = "Navigate with ↑/↓"
+# help_filter    = "/ filter"
+# help_quit      = "'q' quit"
+# atomic_events  = "Atomic Events"
+# total_events   = "Events"
+# empty_dir      = "Directory is empty or an error occurred. Press 'q' to quit."

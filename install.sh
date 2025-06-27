@@ -38,7 +38,37 @@ sudo mv "${TEMP_DIR}/tea_watch" /usr/local/bin/tea_watch
 rm -r "$TEMP_DIR" # Limpiar ficheros temporales
 echo "¡tea_watch instalado correctamente!"
 
-# 5. Intentar configurar el atajo de teclado (la parte más compleja)
+# 5. Crear fichero de configuración por defecto si no existe
+CONFIG_DIR="$HOME/.config/tea_watch"
+if [ ! -d "$CONFIG_DIR" ]; then
+    echo "Creando directorio de configuración en ${CONFIG_DIR}..."
+    mkdir -p "$CONFIG_DIR"
+fi
+
+CONFIG_FILE="$CONFIG_DIR/config.toml"
+if [ ! -f "$CONFIG_FILE" ]; then
+    echo "Creando fichero de configuración de ejemplo en ${CONFIG_FILE}..."
+    cat > "$CONFIG_FILE" << EOL
+# Configuration file for tea_watch
+# -------------------------------------
+nerd_fonts = true
+
+# Uncomment (and translate if necessary) 
+# the following [strings] to make use of them.
+
+[strings]
+# monitoring    = "Monitoring"
+# empty_dir      = "Directory is empty or an error occurred. Press 'q' to quit."
+# filter_prompt  = "Filter: "
+# help_nav       = "Navigate with ↑/↓"
+# help_filter    = "/ filter"
+# help_quit      = "'q' quit"
+# atomic_events  = "Atomic Events"
+# total_events   = "Events"
+EOL
+fi
+
+# 6. Intentar configurar el atajo de teclado (la parte más compleja)
 SHELL_CONFIG=""
 CURRENT_SHELL=$(basename "$SHELL")
 

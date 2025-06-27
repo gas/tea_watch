@@ -1,7 +1,6 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"log"
 	"os" 
@@ -13,6 +12,8 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/fsnotify/fsnotify"
+	"github.com/spf13/pflag"
+	"github.com/spf13/viper"
 )
 
 // --- CONSTANTES ---
@@ -44,15 +45,15 @@ const (
 const (
 	// ASCII Fallback Icons
 	iconAppASCII         = "_"
-	iconFolderASCII      = "D"
-	iconFileASCII        = "F"
-	iconCreateASCII      = "C"
-	iconWriteASCII       = "W"
-	iconRemoveASCII      = "R"
-	iconRenameASCII      = "M" // M for Move
-	iconChmodASCII       = "P" // P for Permissions
-	iconAtomicASCII      = "A"
-	iconTotalEventsASCII = "E"
+	iconFolderASCII      = " "
+	iconFileASCII        = " "
+	iconCreateASCII      = "new"
+	iconWriteASCII       = "wri"
+	iconRemoveASCII      = "del"
+	iconRenameASCII      = "mov" // M for Move
+	iconChmodASCII       = "chm" // P for Permissions
+	iconAtomicASCII      = "Atom"
+	iconTotalEventsASCII = "Tot"
 )
 var (
 	iconApp         string
@@ -66,6 +67,45 @@ var (
 	iconAtomic      string
 	iconTotalEvents string
 )
+
+// --- TEXTOS DE LA INTERFAZ (i18n) ---
+
+type uiStrings struct {
+	Monitoring    string
+	EmptyDir      string
+	FilterPrompt  string
+	HelpNav       string
+	HelpFilter    string
+	HelpQuit      string
+	AtomicEvents  string
+	TotalEvents   string
+}
+
+var esStrings = uiStrings{
+	Monitoring:    "Monitoreando",
+	EmptyDir:      "El directorio está vacío o hubo un error. Pulsa 'q' para salir.",
+	FilterPrompt:  "Filtrar: ",
+	HelpNav:       "Navega con ↑/↓",
+	HelpFilter:    "/ filtrar",
+	HelpQuit:      "'q' salir",
+	AtomicEvents:  "Eventos Atómicos",
+	TotalEvents:   "Eventos",
+}
+
+// not used now, they already are at conf.toml if needed
+var enStrings = uiStrings{
+	Monitoring:    "Monitoring",
+	EmptyDir:      "Directory is empty or an error occurred. Press 'q' to quit.",
+	FilterPrompt:  "Filter: ",
+	HelpNav:       "Navigate with ↑/↓",
+	HelpFilter:    "/ filter",
+	HelpQuit:      "'q' quit",
+	AtomicEvents:  "Atomic Events",
+	TotalEvents:   "Events",
+}
+
+// Esta variable global contendrá los textos seleccionados
+var currentStrings uiStrings
 
 // --- ESTILOS con Lipgloss ---
 var (
@@ -190,7 +230,6 @@ func initialModel(path string) model {
 		// Ignorar directorios que generan mucho ruido
 		name := info.Name()
 
-		// --- AÑADE ESTA CONDICIÓN ---
 		// Ignorar los ficheros temporales de guardado de GTK/GNOME
 		if strings.HasPrefix(name, ".goutputstream-") {
 			return nil // Ignora este fichero y sigue con el siguiente
@@ -523,11 +562,12 @@ func (m model) View() string {
 	title := titleStyle.Render(appName1) + iconStyle.Render(iconApp) + titleStyle.Render(appName2)
 
 	// Vista inicial si aún no hay eventos (aunque ahora debería estar poblada desde el inicio)
-	if len(m.sortedPaths) == 0 {
-		return fmt.Sprintf("%s Monitoreando %s...\n%s",
-			titleStyle.Render(title),
+	if len(m.getVisiblePaths()) == 0 {
+		return fmt.Sprintf("%s %s %s...\n%s",
+			title,
+			currentStrings.Monitoring,
 			m.targetPath,
-			helpStyle.Render("El directorio está vacío o hubo un error. Pulsa 'q' para salir."),
+			helpStyle.Render(currentStrings.EmptyDir),
 		)
 	}
 
@@ -555,29 +595,22 @@ func (m model) View() string {
 	b.WriteString(separatorStyle.Width(m.width).Render("")) // Separador visual
 	b.WriteString("\n")
 
-	//	b.WriteString("\n")
+	//	b.WriteString("\n") // ya no es necesario
 
 	// --- 2. RENDERIZAR LISTA DE FICHEROS ---
-
 	visiblePaths := m.getVisiblePaths()
-	
-	// A PARTIR DE AQUÍ, TODAS LAS REFERENCIAS A 'm.sortedPaths'
-	// DEBEN SER A 'visiblePaths'.
-
 	viewHeight := maxViewHeight
 	if len(visiblePaths) < maxViewHeight {
 		viewHeight = len(visiblePaths)
 	}
 	
-	// Ancho flexible para la columna de fichero, dejando espacio para los contadores
-	fileColWidth := m.width - 25 // 5*5 = 25 para los contadores
+	fileColWidth := m.width - 25
 
 	for i := 0; i < viewHeight; i++ {
 		idx := m.scrollOffset + i
 		if idx >= len(visiblePaths) {
 			break
 		}
-
 		pathKey := visiblePaths[idx]
 		event := m.events[pathKey]
 
@@ -632,17 +665,18 @@ func (m model) View() string {
 	var helpLeft string
 	if m.isFiltering {
 		// Mostramos el campo del filtro cuando está activo
-		filterPrompt := "Filtrar: " + m.filter
+		filterPrompt := currentStrings.FilterPrompt + m.filter
 		// Añadimos un "cursor" parpadeante (simple)
 		if time.Now().Second()%2 == 0 {
 			filterPrompt += "_"
 		}
+		// Texto de ayuda a la izquierda
 		helpLeft = helpStyle.Render(filterPrompt)
 	} else {
-		helpLeft = helpStyle.Render(fmt.Sprintf("%s: %d | Navega con ↑/↓ | / filtrar | 'q' salir", iconTotalEvents, m.totalEvents))
+		// Texto de ayuda a la izquierda
+		helpLeft = helpStyle.Render(fmt.Sprintf("%s: %d | %s | %s | %s", iconTotalEvents, m.totalEvents, currentStrings.HelpNav, currentStrings.HelpFilter, currentStrings.HelpQuit))
 	}
-	// Texto de ayuda a la izquierda
-	//helpLeft := helpStyle.Render(fmt.Sprintf("Eventos: %d | Navega con ↑/↓ | 'q' para salir", len(m.sortedPaths)))
+
 	
 	// --- LÓGICA DE PAGINACIÓN ---
 	// Calculamos el rango de elementos que se están mostrando
@@ -657,7 +691,7 @@ func (m model) View() string {
 	paginationStr := fmt.Sprintf("%d-%d/%d", startIndex, endIndex, totalFiles)
 
 	// --- EVENTOS ATÓMICOS ---
-	// Contador de eventos atómicos a la derecha (solo si es mayor que cero)
+	// Contador de eventos atómicos a la derecha
 	atomicEventsStr := ""
 	if m.atomicEvents > 0 {
 		atomicEventsStr = helpStyle.Render(fmt.Sprintf("%s: %d", iconAtomic, m.atomicEvents))
@@ -701,26 +735,51 @@ func formatCounter(n int, width int) string {
 }
 
 func main() {
-	// --- GESTIÓN DE FLAGS ---
-	// 1. Definimos el flag.
-	useASCII := flag.Bool("no-nerd-fonts", false, "Usa caracteres ASCII en lugar de iconos Nerd Font.")
-	// 2. Parseamos los argumentos que recibe la aplicación.
-	flag.Parse()
+	// --- CONFIGURACIÓN CON VIPER ---
 
-	// --- SELECCIÓN DE ICONOS ---
-	// 3. Elegimos qué conjunto de iconos usar.
-	if *useASCII {
-		iconApp = iconAppASCII
-		iconFolder = iconFolderASCII
-		iconFile = iconFileASCII
-		iconCreate = iconCreateASCII
-		iconWrite = iconWriteASCII
-		iconRemove = iconRemoveASCII
-		iconRename = iconRenameASCII
-		iconChmod = iconChmodASCII
-		iconAtomic = iconAtomicASCII
-		iconTotalEvents = iconTotalEventsASCII
-	} else {
+// 1. Le decimos a Viper dónde buscar el fichero de configuración.
+	viper.AddConfigPath("$HOME/.config/tea_watch") // Ruta
+	viper.SetConfigName("config")                  // Nombre del fichero
+	viper.SetConfigType("toml")                    // Tipo de fichero
+
+	// 2. Definimos los valores por defecto (español).
+	// Viper los usará si el fichero de config no existe o si una clave falta.
+	viper.SetDefault("nerd_fonts", true)
+	viper.SetDefault("strings.monitoring", esStrings.Monitoring)
+	viper.SetDefault("strings.empty_dir", esStrings.EmptyDir)
+	viper.SetDefault("strings.filter_prompt", esStrings.FilterPrompt)
+	viper.SetDefault("strings.help_nav", esStrings.HelpNav)
+	viper.SetDefault("strings.help_filter", esStrings.HelpFilter)
+	viper.SetDefault("strings.help_quit", esStrings.HelpQuit)
+	viper.SetDefault("strings.atomic_events", esStrings.AtomicEvents)
+	viper.SetDefault("strings.total_events", esStrings.TotalEvents)
+
+	// 3. Leemos el fichero de configuración. No da error si no lo encuentra.
+	viper.ReadInConfig()
+
+	// 4. Definimos y bindeamos los flags. Los flags siempre tendrán prioridad.
+	pflag.Bool("nerd-fonts", viper.GetBool("nerd_fonts"), "Usa iconos Nerd Font.")
+	pflag.Parse()
+	viper.BindPFlags(pflag.CommandLine)
+
+	// --- LÓGICA DE LA APLICACIÓN ---
+
+	// 5. Rellenamos la struct de textos directamente desde Viper.
+	// Viper elige el valor correcto: flag > fichero de config > valor por defecto.
+	currentStrings = uiStrings{
+		Monitoring:    viper.GetString("strings.monitoring"),
+		EmptyDir:      viper.GetString("strings.empty_dir"),
+		FilterPrompt:  viper.GetString("strings.filter_prompt"),
+		HelpNav:       viper.GetString("strings.help_nav"),
+		HelpFilter:    viper.GetString("strings.help_filter"),
+		HelpQuit:      viper.GetString("strings.help_quit"),
+		AtomicEvents:  viper.GetString("strings.atomic_events"),
+		TotalEvents:   viper.GetString("strings.total_events"),
+	}
+
+	// Selección de iconos
+	if viper.GetBool("nerd-fonts") {
+		// iconos NF
 		iconApp = iconAppNF
 		iconFolder = iconFolderNF
 		iconFile = iconFileNF
@@ -731,17 +790,28 @@ func main() {
 		iconChmod = iconChmodNF
 		iconAtomic = iconAtomicNF
 		iconTotalEvents = iconTotalEventsNF
+	} else {
+		// iconos-caracteres ASCII
+		iconApp = iconAppASCII
+		iconFolder = iconFolderASCII
+		iconFile = iconFileASCII
+		iconCreate = iconCreateASCII
+		iconWrite = iconWriteASCII
+		iconRemove = iconRemoveASCII
+		iconRename = iconRenameASCII
+		iconChmod = iconChmodASCII
+		iconAtomic = iconAtomicASCII
+		iconTotalEvents = iconTotalEventsASCII
 	}
 
 	// Usar el directorio actual si no se especifica otro
 	dir := "."
-	if len(os.Args) > 1 {
-		dir = os.Args[1]
+	if len(pflag.Args()) > 0 {
+		dir = pflag.Args()[0]
 	}
 
 	//p := tea.NewProgram(initialModel(dir))
 	m := initialModel(dir)
-	// Pero a NewProgram le pasamos un PUNTERO a nuestro modelo, usando '&'
 	p := tea.NewProgram(&m,
 		tea.WithMouseAllMotion(),
 	)

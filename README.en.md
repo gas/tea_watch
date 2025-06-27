@@ -83,3 +83,24 @@ tea_watch --no-nerd-fonts /path/to/your/directory
 | `/`            | Enter/exit filter mode               |
 | `Esc`          | Exit filter mode / Exit the program  |
 | `q` / `Ctrl+C` | Exit the program                     |
+
+## Localization (Translation)
+
+You can translate `tea_watch` to any language.
+
+1. After installing the application, look for the configuration file that has been created at:
+ `~/.config/tea_watch/config.toml`
+ It should be the same as [config.example.toml](config.example.toml) in this repository.
+
+2.  Open the file with a text editor. You will see a `[strings]` section with all the English phrases commented out.
+
+3.  Uncomment the lines and translate the text to the language you want. For example, for French:
+
+    ```toml
+ [strings]
+ monitoring = "Surveillance"
+ filter_prompt = "Filtrer: "
+ total_events = "Événements"
+    # ...and so on.
+ ````
+4. Save the file. Next time you run `tea_watch`, it will appear in your language!
