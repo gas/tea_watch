@@ -4,7 +4,7 @@
 
 `tea_watch` es una utilidad de terminal, escrita en Go con lipgloss, para monitorizar cambios en el sistema de ficheros en tiempo real. Muy útil para cualquier proceso que comience a modificar muchos archivos (Gemini-cli, no miro para nadie...).
 
-![Captura de pantalla de tea_watch en acción](https://github.com/user-attachments/assets/fb7c343a-42cd-420c-bd1a-ff27900b8945?raw=true)
+![teawatch en accion](https://github.com/user-attachments/assets/cc4520f1-454f-4124-8c7d-477d4697807f?raw=true)
 
 ## Características
 
