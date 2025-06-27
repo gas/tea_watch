@@ -1,9 +1,9 @@
 #!/bin/sh
 #
-# Script de instalación para tea_watch
+# Script de instalación para tea_watch v1.3
 #
-# Este script descarga el binario apropiado (tar.gz o zip) de la última
-# release de GitHub y lo instala en /usr/local/bin.
+# Instala tea_watch en el directorio local del usuario (~/.local/bin),
+# sin necesidad de contraseña.
 
 set -e # Salir inmediatamente si un comando falla
 
@@ -16,58 +16,67 @@ case $ARCH in
   arm64) ARCH="arm64" ;;
 esac
 
-# 2. Encontrar la última versión
+# 2. Encontrar la última versión (esto no cambia)
 LATEST_RELEASE=$(curl -s "https://api.github.com/repos/gas/tea_watch/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
 if [ -z "$LATEST_RELEASE" ]; then
   echo "Error: No se pudo encontrar la última release de tea_watch."
   exit 1
 fi
 
-# --- LÓGICA DE DETECCIÓN DE FORMATO ---
-# 3. Determinar el nombre del fichero, la extensión y el comando de extracción
-# FILENAME_BASE="tea_watch_${LATEST_RELEASE}-${OS}-${ARCH}"
+# 3. Determinar el nombre del fichero y del binario interno
+#    (Como ya no usas versión en el nombre, lo dejamos simple)
 FILENAME_BASE="tea_watch-${OS}-${ARCH}"
-EXT=""
-EXTRACT_CMD=""
-BIN_NAME="tea_watch" # Nombre del binario dentro del archivo
-
-if [ "$OS" = "windows" ]; then
-    EXT=".zip"
-    # Unzip y extrae solo el .exe a la carpeta temporal
-    EXTRACT_CMD="unzip -j"
-    BIN_NAME="tea_watch.exe"
-else
-    EXT=".tar.gz"
-    # Tar y extrae solo el binario, quitando la estructura de carpetas
-    EXTRACT_CMD="tar -xzf"
-fi
-
+EXT=".tar.gz"
+# ---> ESTA ES LA CORRECCIÓN CLAVE <---
+# El nombre del binario DENTRO del .tar.gz es el mismo que el del propio fichero (sin la extensión)
+BIN_NAME="${FILENAME_BASE}"
 DOWNLOAD_URL="https://github.com/gas/tea_watch/releases/download/${LATEST_RELEASE}/${FILENAME_BASE}${EXT}"
 
 echo "Descargando tea_watch ${LATEST_RELEASE} para ${OS}/${ARCH}..."
 
 # 4. Descargar y descomprimir
 TEMP_DIR=$(mktemp -d)
-# Descargamos el archivo con su nombre correcto
-curl -fL -o "${TEMP_DIR}/${FILENAME_BASE}${EXT}" "$DOWNLOAD_URL"
+curl -fL -o "${TEMP_DIR}/archive.tar.gz" "$DOWNLOAD_URL"
 echo "Descarga completa."
+# Extraemos todo el contenido a la carpeta temporal.
+tar -xzf "${TEMP_DIR}/archive.tar.gz" -C "${TEMP_DIR}"
 
-# Extraemos el contenido dentro del directorio temporal
-# La lógica ahora maneja ambos formatos
-if [ "$OS" = "windows" ]; then
-    ${EXTRACT_CMD} "${TEMP_DIR}/${FILENAME_BASE}${EXT}" "${BIN_NAME}" -d "${TEMP_DIR}"
-else
-    # Para tar, extraemos solo el binario que nos interesa
-    ${EXTRACT_CMD} "${TEMP_DIR}/${FILENAME_BASE}${EXT}" -C "${TEMP_DIR}" --strip-components=1 "${BIN_NAME}"
+# 5. Instalar en el directorio local del usuario (SIN sudo)
+# ---> ESTE ES EL SEGUNDO CAMBIO IMPORTANTE <---
+INSTALL_DIR="$HOME/.local/bin"
+
+# Crear el directorio de instalación si no existe
+if [ ! -d "$INSTALL_DIR" ]; then
+    echo "Creando directorio de instalación en ${INSTALL_DIR}..."
+    mkdir -p "$INSTALL_DIR"
 fi
 
-# 5. Instalar el binario
-echo "Instalando ${BIN_NAME} en /usr/local/bin (puede requerir contraseña)..."
-sudo mv "${TEMP_DIR}/${BIN_NAME}" "/usr/local/bin/tea_watch" # Siempre se instala como 'tea_watch'
+echo "Instalando tea_watch en ${INSTALL_DIR}..."
+# Movemos el binario (que tiene el nombre completo) y lo renombramos a "tea_watch"
+mv "${TEMP_DIR}/${BIN_NAME}" "${INSTALL_DIR}/tea_watch"
 rm -r "$TEMP_DIR" # Limpiar ficheros temporales
 echo "¡tea_watch instalado correctamente!"
 
-# 6. Crear fichero de configuración por defecto si no existe
+# 6. Comprobar si la ruta de instalación está en el $PATH
+case ":$PATH:" in
+  *":$INSTALL_DIR:"*)
+    # El PATH ya está configurado, todo bien.
+    ;;
+  *)
+    # El PATH no está configurado, avisamos al usuario.
+    echo "----------------------------------------------------------------"
+    echo "ADVERTENCIA: Tu directorio ${INSTALL_DIR} no está en tu \$PATH."
+    echo "Para poder ejecutar 'tea_watch' desde cualquier lugar, añade la siguiente"
+    echo "línea al final de tu fichero ~/.bashrc o ~/.zshrc:"
+    echo ""
+    echo "  export PATH=\"\$HOME/.local/bin:\$PATH\""
+    echo ""
+    echo "Luego, reinicia tu terminal."
+    echo "----------------------------------------------------------------"
+    ;;
+esac
+
+# 7. Crear fichero de configuración por defecto si no existe
 CONFIG_DIR="$HOME/.config/tea_watch"
 if [ ! -d "$CONFIG_DIR" ]; then
     echo "Creando directorio de configuración en ${CONFIG_DIR}..."
@@ -97,7 +106,7 @@ nerd_fonts = true
 EOL
 fi
 
-# 7. Intentar configurar el atajo de teclado (la parte más compleja)
+# 8. Intentar configurar el atajo de teclado (la parte más compleja)
 SHELL_CONFIG=""
 CURRENT_SHELL=$(basename "$SHELL")
 
