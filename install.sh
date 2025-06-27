@@ -16,7 +16,7 @@ case $ARCH in
   arm64) ARCH="arm64" ;;
 esac
 
-# 2. Encontrar la última versión (esto no cambia)
+# 2. Encontrar la última versión
 LATEST_RELEASE=$(curl -s "https://api.github.com/repos/gas/tea_watch/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
 if [ -z "$LATEST_RELEASE" ]; then
   echo "Error: No se pudo encontrar la última release de tea_watch."
@@ -24,11 +24,8 @@ if [ -z "$LATEST_RELEASE" ]; then
 fi
 
 # 3. Determinar el nombre del fichero y del binario interno
-#    (Como ya no usas versión en el nombre, lo dejamos simple)
 FILENAME_BASE="tea_watch-${OS}-${ARCH}"
 EXT=".tar.gz"
-# ---> ESTA ES LA CORRECCIÓN CLAVE <---
-# El nombre del binario DENTRO del .tar.gz es el mismo que el del propio fichero (sin la extensión)
 BIN_NAME="${FILENAME_BASE}"
 DOWNLOAD_URL="https://github.com/gas/tea_watch/releases/download/${LATEST_RELEASE}/${FILENAME_BASE}${EXT}"
 
@@ -38,32 +35,26 @@ echo "Descargando tea_watch ${LATEST_RELEASE} para ${OS}/${ARCH}..."
 TEMP_DIR=$(mktemp -d)
 curl -fL -o "${TEMP_DIR}/archive.tar.gz" "$DOWNLOAD_URL"
 echo "Descarga completa."
-# Extraemos todo el contenido a la carpeta temporal.
 tar -xzf "${TEMP_DIR}/archive.tar.gz" -C "${TEMP_DIR}"
 
 # 5. Instalar en el directorio local del usuario (SIN sudo)
-# ---> ESTE ES EL SEGUNDO CAMBIO IMPORTANTE <---
 INSTALL_DIR="$HOME/.local/bin"
 
-# Crear el directorio de instalación si no existe
 if [ ! -d "$INSTALL_DIR" ]; then
     echo "Creando directorio de instalación en ${INSTALL_DIR}..."
     mkdir -p "$INSTALL_DIR"
 fi
 
 echo "Instalando tea_watch en ${INSTALL_DIR}..."
-# Movemos el binario (que tiene el nombre completo) y lo renombramos a "tea_watch"
 mv "${TEMP_DIR}/${BIN_NAME}" "${INSTALL_DIR}/tea_watch"
-rm -r "$TEMP_DIR" # Limpiar ficheros temporales
+rm -r "$TEMP_DIR"
 echo "¡tea_watch instalado correctamente!"
 
 # 6. Comprobar si la ruta de instalación está en el $PATH
 case ":$PATH:" in
   *":$INSTALL_DIR:"*)
-    # El PATH ya está configurado, todo bien.
     ;;
   *)
-    # El PATH no está configurado, avisamos al usuario.
     echo "----------------------------------------------------------------"
     echo "ADVERTENCIA: Tu directorio ${INSTALL_DIR} no está en tu \$PATH."
     echo "Para poder ejecutar 'tea_watch' desde cualquier lugar, añade la siguiente"
@@ -76,7 +67,7 @@ case ":$PATH:" in
     ;;
 esac
 
-# 7. Crear fichero de configuración por defecto si no existe
+# 7. Crear fichero de configuración y atajos
 CONFIG_DIR="$HOME/.config/tea_watch"
 if [ ! -d "$CONFIG_DIR" ]; then
     echo "Creando directorio de configuración en ${CONFIG_DIR}..."
@@ -106,9 +97,10 @@ nerd_fonts = true
 EOL
 fi
 
-# 8. Intentar configurar el atajo de teclado (la parte más compleja)
+# 8. Intentar configurar el atajo de teclado
 SHELL_CONFIG=""
 CURRENT_SHELL=$(basename "$SHELL")
+COMMENT_TAG="# Atajo para tea_watch"
 
 if [ "$CURRENT_SHELL" = "bash" ]; then
     SHELL_CONFIG="$HOME/.bashrc"
@@ -117,37 +109,32 @@ elif [ "$CURRENT_SHELL" = "zsh" ]; then
 fi
 
 if [ -n "$SHELL_CONFIG" ]; then
-    # Lógica para BASH
-    if [ "$CURRENT_SHELL" = "bash" ]; then
-        if ! grep -q 'bind -x '"'"'"\ew": "tea_watch"'"' "$SHELL_CONFIG"; then
-            echo '' >> "$SHELL_CONFIG"
-            echo '# Atajo para tea_watch (añadido por el script de instalación)' >> "$SHELL_CONFIG"
-            echo 'bind -x '"'"'"\ew": "tea_watch"'"' >> "$SHELL_CONFIG"
-            echo "¡Atajo para bash añadido!"
-        else
-            echo "El atajo de bash ya parece estar configurado."
-        fi
-    fi
+    # Usamos grep para buscar nuestro comentario. Si no lo encuentra, añade el atajo.
+    if ! grep -q "$COMMENT_TAG" "$SHELL_CONFIG"; then
+        echo "Añadiendo el atajo 'Alt+w' a tu fichero ${SHELL_CONFIG}..."
+        # Añade un salto de línea para separar
+        echo '' >> "$SHELL_CONFIG"
+        echo "$COMMENT_TAG (añadido por el script de instalación)" >> "$SHELL_CONFIG"
 
-    # Lógica para ZSH
-    if [ "$CURRENT_SHELL" = "zsh" ]; then
-        if ! grep -q "tea_watch_widget" "$SHELL_CONFIG"; then
-            echo '' >> "$SHELL_CONFIG"
-            echo '# Atajo para tea_watch (añadido por el script de instalación)' >> "$SHELL_CONFIG"
+        # Lógica para BASH
+        if [ "$CURRENT_SHELL" = "bash" ]; then
+            echo 'bind -x '"'"'"\ew": "tea_watch"'"' >> "$SHELL_CONFIG"
+        fi
+
+        # Lógica para ZSH
+        if [ "$CURRENT_SHELL" = "zsh" ]; then
             echo 'tea_watch_widget() {' >> "$SHELL_CONFIG"
             echo '  tea_watch' >> "$SHELL_CONFIG"
             echo '  zle reset-prompt' >> "$SHELL_CONFIG"
             echo '}' >> "$SHELL_CONFIG"
             echo 'zle -N tea_watch_widget' >> "$SHELL_CONFIG"
-            echo 'bindkey '\''\ew'\'' tea_watch_widget' >> "$SHELL_CONFIG"
-            echo "¡Atajo para zsh añadido!"
-        else
-            echo "El atajo de zsh ya parece estar configurado."
+            echo "bindkey '\ew' tea_watch_widget" >> "$SHELL_CONFIG"
         fi
+
+        echo "¡Atajo añadido! Por favor, reinicia tu terminal o ejecuta 'source ${SHELL_CONFIG}'"
+    else
+        echo "El atajo ya parece estar configurado."
     fi
-
-    echo "Por favor, reinicia tu terminal o ejecuta 'source ${SHELL_CONFIG}' para aplicar los cambios."
-
 else
     echo "No se pudo detectar tu shell (bash/zsh) para configurar el atajo automáticamente."
 fi
