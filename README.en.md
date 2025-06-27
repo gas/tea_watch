@@ -1,6 +1,7 @@
 ![logo_tea_watch](https://github.com/user-attachments/assets/ec88ee38-1b54-40a9-9a38-fa18c29b97a1)
 
-![Go Build & Test](https://github.com/gas/tea_watch/actions/workflows/go.yml/badge.svg) ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg) ![GitHub release (latest by date)](https://img.shields.io/github/v/release/gas/tea_watch) | [README en español](README.md)
+![Go Build & Test](https://github.com/gas/tea_watch/actions/workflows/go.yml/badge.svg) ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg) ![GitHub release (latest by date)](https://img.shields.io/github/v/release/gas/tea_watch)
+[README en español](README.md)
 
 `tea_watch` is a terminal utility, written in Go with Lipgloss, for monitoring filesystem changes in real-time. It's very useful for any process that starts modifying files (I'm not looking at anyone, Gemini-cli...).
 
