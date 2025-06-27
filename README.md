@@ -1,9 +1,9 @@
-# tea 👁️ Watch
+![logo_tea_watch](https://github.com/user-attachments/assets/ec88ee38-1b54-40a9-9a38-fa18c29b97a1)
 
-tea_watch es una herramienta de terminal moderna, escrita en Go, para monitorizar cambios en el sistema de ficheros en tiempo real. Es ideal para desarrolladores que necesitan ver qué archivos están siendo modificados por sus compiladores, editores o cualquier otro proceso.
 
-![Captura de pantalla de tea_watch en acción](https://github.com/[TU_USUARIO]/[TU_REPOSITORIO]/blob/main/screenshot.png?raw=true)
-*(Sube una captura de pantalla a tu repositorio y reemplaza este enlace)*
+tea_watch es una utilidad de terminal, escrita en Go con lipgloss, para monitorizar cambios en el sistema de ficheros en tiempo real. Muy útil para cualquier proceso que comience a modificar archivos (Gemini-cli, no miro para nadie...).
+
+![Captura de pantalla de tea_watch en acción](https://github.com/user-attachments/assets/fb7c343a-42cd-420c-bd1a-ff27900b8945?raw=true)
 
 ## Características
 
@@ -17,12 +17,13 @@ tea_watch es una herramienta de terminal moderna, escrita en Go, para monitoriza
 
 ## Instalación
 
-Puedes descargar el binario precompilado para tu sistema operativo desde la [página de Releases](https://github.com/[TU_USUARIO]/[TU_REPOSITORIO]/releases).
+Puedes descargar el binario precompilado para tu sistema operativo desde la [página de Releases](https://github.com/gas/tea_watch/releases).
 
 1.  Descarga el archivo correspondiente a tu sistema (ej. `tea_watch-linux-amd64.tar.gz`).
 2.  Descomprímelo.
 3.  Haz el fichero ejecutable: `chmod +x tea_watch`
 4.  (Opcional, recomendado) Mueve el fichero a un directorio en tu `$PATH` para poder ejecutarlo desde cualquier lugar: `sudo mv tea_watch /usr/local/bin/`
+5.  (Opcional, recomendado) Crea un binding con un atajo de teclado CTRL+
 
 ## Uso
 
@@ -46,3 +47,4 @@ tea_watch /ruta/a/tu/directorio
 | `/`               | Entrar/salir del modo de filtrado    |
 | `Esc`             | Salir del modo de filtrado / Salir del programa |
 | `q` / `Ctrl+C`    | Salir del programa                   |
+
