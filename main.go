@@ -30,6 +30,7 @@ const (
 	iconRename      = " " // rename event:	  󰯏 󱈢 
 	iconChmod       = " "  // chmod event:  	
 	iconAtomic      = " "  // chmod event:     󰛕 
+	iconTotalEvents = " "
 	iconPlaceholder = " " // Espacio para alineación
 )
 
@@ -114,9 +115,12 @@ type model struct {
 	width        int                       // Ancho del terminal
 	height       int                       // Alto del terminal
 	cursor       int                       // Posición del cursor en la lista
+	totalEvents  int 					   // Eventos totales
 	atomicEvents int 					   // eventos de guardado atómico
 	scrollOffset int                       // Desplazamiento de la vista para el scroll
 	lastError    string
+	isFiltering  bool   // Estamos en modo filtro?
+	filter       string // El texto del filtro
 	targetPath   string // Directorio que se está observando
 }
 
@@ -236,18 +240,50 @@ func addPathRecursively(watcher *fsnotify.Watcher, path string) error {
 func (m model) Init() tea.Cmd {
 	// El watcher ya fue configurado en initialModel.
 	// Solo necesitamos empezar a escuchar eventos en una goroutine.
-	return m.watchEvents()
+	//return m.watchEvents()
+	return tea.Batch(
+		m.watchEvents(),
+		tea.Tick(time.Second, func(t time.Time) tea.Msg { return t }),
+	)
 }
 
 // Update maneja los mensajes y actualiza el modelo.
-func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case time.Time:
+		// Este es el mensaje del Tick. No necesitamos hacer nada con él,
+		// solo devolver un comando nil para que la vista se vuelva a renderizar.
+		return m, nil
+
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
 
 	case tea.KeyMsg:
+		// Si estamos en modo filtro, la entrada de teclado tiene prioridad
+		if m.isFiltering {
+			switch msg.String() {
+			case "esc":
+				m.isFiltering = false
+				m.filter = ""
+			case "backspace":
+				if len(m.filter) > 0 {
+					m.filter = m.filter[:len(m.filter)-1]
+				}
+			default:
+				// Añadimos el caracter tecleado al filtro
+				m.filter += msg.String()
+			}
+			return m, nil // Salimos para no procesar otras teclas
+		}
+
 		switch msg.String() {
+		case "/":
+			m.isFiltering = true
+			m.filter = ""
+			m.cursor = 0 // Reiniciamos el cursor al empezar a filtrar
+			m.scrollOffset = 0
+			return m, nil
 		case "q", "ctrl+c", "esc":
 			m.watcher.Close()
 			return m, tea.Quit
@@ -280,6 +316,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// Importante: Re-armamos la escucha y terminamos el procesamiento para este evento.
 			return m, m.watchEvents()
 		}
+
+		m.totalEvents++ 
 
 		// Normalizar la ruta del evento
 		path := msg.Name
@@ -411,9 +449,26 @@ func (m model) View() string {
 	//	b.WriteString("\n")
 
 	// --- 2. RENDERIZAR LISTA DE FICHEROS ---
+
+	// Primero, determinamos la lista de rutas a mostrar
+	var visiblePaths []string
+	if m.isFiltering {
+		for _, path := range m.sortedPaths {
+			// Usamos el nombre base para el filtro (más intuitivo)
+			if strings.Contains(strings.ToLower(filepath.Base(path)), strings.ToLower(m.filter)) {
+				visiblePaths = append(visiblePaths, path)
+			}
+		}
+	} else {
+		visiblePaths = m.sortedPaths
+	}
+	
+	// A PARTIR DE AQUÍ, TODAS LAS REFERENCIAS A 'm.sortedPaths'
+	// DEBEN SER A 'visiblePaths'.
+
 	viewHeight := maxViewHeight
-	if len(m.sortedPaths) < maxViewHeight {
-		viewHeight = len(m.sortedPaths)
+	if len(visiblePaths) < maxViewHeight {
+		viewHeight = len(visiblePaths)
 	}
 	
 	// Ancho flexible para la columna de fichero, dejando espacio para los contadores
@@ -421,11 +476,11 @@ func (m model) View() string {
 
 	for i := 0; i < viewHeight; i++ {
 		idx := m.scrollOffset + i
-		if idx >= len(m.sortedPaths) {
+		if idx >= len(visiblePaths) {
 			break
 		}
 
-		pathKey := m.sortedPaths[idx]
+		pathKey := visiblePaths[idx]
 		event := m.events[pathKey]
 
 		// Construir nombre de fichero con indentación y icono
@@ -464,7 +519,11 @@ func (m model) View() string {
 		)
 
 		if m.cursor == idx {
+			//b.WriteString(selectedRowStyle.Width(m.width).Render(rowStr))
 			b.WriteString(selectedRowStyle.Width(m.width).Render(rowStr))
+		} else if time.Since(event.lastEvent) < 3*time.Second {
+			// Si no está el cursor, pero el evento es reciente, lo resaltamos
+			b.WriteString(highlightedRowStyle.Width(m.width).Render(rowStr))
 		} else {
 			b.WriteString(rowStr)
 		}
@@ -472,12 +531,24 @@ func (m model) View() string {
 	}
 
 	// --- 3. RENDERIZAR AYUDA Y ESTADO ---
+	var helpLeft string
+	if m.isFiltering {
+		// Mostramos el campo del filtro cuando está activo
+		filterPrompt := "Filtrar: " + m.filter
+		// Añadimos un "cursor" parpadeante (simple)
+		if time.Now().Second()%2 == 0 {
+			filterPrompt += "_"
+		}
+		helpLeft = helpStyle.Render(filterPrompt)
+	} else {
+		helpLeft = helpStyle.Render(fmt.Sprintf("%s: %d | Navega con ↑/↓ | / filtrar | 'q' salir", iconTotalEvents, m.totalEvents))
+	}
 	// Texto de ayuda a la izquierda
-	helpLeft := helpStyle.Render(fmt.Sprintf("Eventos: %d | Navega con ↑/↓ | 'q' para salir", len(m.sortedPaths)))
+	//helpLeft := helpStyle.Render(fmt.Sprintf("Eventos: %d | Navega con ↑/↓ | 'q' para salir", len(m.sortedPaths)))
 	
 	// --- LÓGICA DE PAGINACIÓN ---
 	// Calculamos el rango de elementos que se están mostrando
-	totalFiles := len(m.sortedPaths)
+	totalFiles := len(visiblePaths)
 	startIndex := m.scrollOffset + 1
 	// El índice final es el menor entre el final del scroll o el total de ficheros
 	endIndex := m.scrollOffset + viewHeight
@@ -538,7 +609,10 @@ func main() {
 		dir = os.Args[1]
 	}
 
-	p := tea.NewProgram(initialModel(dir))
+	//p := tea.NewProgram(initialModel(dir))
+	m := initialModel(dir)
+	// Pero a NewProgram le pasamos un PUNTERO a nuestro modelo, usando '&'
+	p := tea.NewProgram(&m)
 
 	if _, err := p.Run(); err != nil {
 		log.Fatalf("Error al ejecutar el programa: %v", err)
