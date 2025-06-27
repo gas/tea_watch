@@ -1,0 +1,48 @@
+# tea 👁️ Watch
+
+tea_watch es una herramienta de terminal moderna, escrita en Go, para monitorizar cambios en el sistema de ficheros en tiempo real. Es ideal para desarrolladores que necesitan ver qué archivos están siendo modificados por sus compiladores, editores o cualquier otro proceso.
+
+![Captura de pantalla de tea_watch en acción](https://github.com/[TU_USUARIO]/[TU_REPOSITORIO]/blob/main/screenshot.png?raw=true)
+*(Sube una captura de pantalla a tu repositorio y reemplaza este enlace)*
+
+## Características
+
+* **Monitorización en Tiempo Real:** Usa `fsnotify` para una detección de eventos eficiente y nativa.
+* **Interfaz Clara y Dinámica:** Construida con `Bubble Tea` y `Lipgloss`, la interfaz se adapta al tamaño de tu terminal.
+* **Contadores de Eventos:** Visualiza cuántas veces se ha creado, escrito, renombrado o borrado un fichero.
+* **Navegación Intuitiva:** Muévete por la lista de ficheros con las flechas del teclado o la rueda del ratón.
+* **Filtrado en Tiempo Real:** Pulsa `/` para empezar a escribir y filtrar la lista de ficheros al instante.
+* **Resaltado de Eventos:** Los ficheros con cambios recientes se resaltan sutilmente para llamar tu atención.
+* **Gestión Inteligente:** Agrupa eventos "atómicos" (de guardado seguro) y oculta los ficheros borrados tras un tiempo para mantener la vista limpia.
+
+## Instalación
+
+Puedes descargar el binario precompilado para tu sistema operativo desde la [página de Releases](https://github.com/[TU_USUARIO]/[TU_REPOSITORIO]/releases).
+
+1.  Descarga el archivo correspondiente a tu sistema (ej. `tea_watch-linux-amd64.tar.gz`).
+2.  Descomprímelo.
+3.  Haz el fichero ejecutable: `chmod +x tea_watch`
+4.  (Opcional, recomendado) Mueve el fichero a un directorio en tu `$PATH` para poder ejecutarlo desde cualquier lugar: `sudo mv tea_watch /usr/local/bin/`
+
+## Uso
+
+Simplemente ejecuta el comando en tu terminal:
+
+```bash
+# Monitorizar el directorio actual
+tea_watch
+
+# Monitorizar un directorio específico
+tea_watch /ruta/a/tu/directorio
+```
+
+### Atajos de Teclado
+
+| Tecla(s)          | Acción                               |
+| ----------------- | ------------------------------------ |
+| `↑` / `k`         | Mover cursor hacia arriba            |
+| `↓` / `j`         | Mover cursor hacia abajo             |
+| `Rueda del Ratón` | Desplazarse por la lista             |
+| `/`               | Entrar/salir del modo de filtrado    |
+| `Esc`             | Salir del modo de filtrado / Salir del programa |
+| `q` / `Ctrl+C`    | Salir del programa                   |

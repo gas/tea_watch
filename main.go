@@ -16,7 +16,9 @@ import (
 
 // --- CONSTANTES ---
 const maxViewHeight = 10 // Altura máxima de la lista antes de hacer scroll
+const uiTotalHeight = 12 // Altura TOTAL de la UI (10 para la lista + 3 para cabecera/pie)
 const deleteTimeout = 30 * time.Second 
+const scrollAmount = 3 // Número de líneas a mover con cada tick de la rueda
 
 // --- ICONOS (requiere Nerd Font) ---
 const (
@@ -266,6 +268,33 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
+
+	case tea.MouseMsg:
+		switch msg.Type {
+		case tea.MouseWheelUp:
+			// Mover hacia arriba
+			m.cursor -= scrollAmount
+			// Asegurarse de que no nos pasamos del límite superior (0)
+			if m.cursor < 0 {
+				m.cursor = 0
+			}
+			// Ajustar el scroll si es necesario
+			if m.cursor < m.scrollOffset {
+				m.scrollOffset = m.cursor
+			}
+		case tea.MouseWheelDown:
+			// Mover hacia abajo
+			m.cursor += scrollAmount
+			// Asegurarse de que no nos pasamos del límite inferior
+			maxCursor := len(m.getVisiblePaths()) - 1
+			if m.cursor > maxCursor {
+				m.cursor = maxCursor
+			}
+			// Ajustar el scroll si es necesario
+			if m.cursor >= m.scrollOffset+maxViewHeight {
+				m.scrollOffset = m.cursor - maxViewHeight + 1
+			}
+		}
 
 	case tea.KeyMsg:
 		// Si estamos en modo filtro, la entrada de teclado tiene prioridad
@@ -651,9 +680,17 @@ func main() {
 	//p := tea.NewProgram(initialModel(dir))
 	m := initialModel(dir)
 	// Pero a NewProgram le pasamos un PUNTERO a nuestro modelo, usando '&'
-	p := tea.NewProgram(&m)
+	p := tea.NewProgram(&m,
+		tea.WithMouseAllMotion(),
+	)
 
 	if _, err := p.Run(); err != nil {
 		log.Fatalf("Error al ejecutar el programa: %v", err)
 	}
+
+	// --- CÓDIGO DE LIMPIEZA MANUAL ---
+	// Esto se ejecuta JUSTO DESPUÉS de que el programa termine (al pulsar 'q')
+	// \033[%dA : Mueve el cursor N líneas hacia ARRIBA
+	// \033[J   : Borra todo desde el cursor hasta el final de la pantalla
+	fmt.Printf("\033[%dA\033[J", uiTotalHeight)	
 }
