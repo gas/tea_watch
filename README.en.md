@@ -4,9 +4,10 @@
 
 `tea_watch` is a terminal utility, written in Go with Lipgloss, for monitoring filesystem changes in real-time. It's very useful for any process that starts modifying files (I'm not looking at anyone, Gemini-cli...).
 
-![Screenshot of tea_watch in action](https://github.com/user-attachments/assets/fb7c343a-42cd-420c-bd1a-ff27900b8945?raw=true)
+![teawatch in action](https://github.com/user-attachments/assets/cc4520f1-454f-4124-8c7d-477d4697807f?raw=true)
 
 ## Features
+
 
 * **Real-Time Monitoring:** Uses `fsnotify` for efficient, native event detection.
 * **Clear & Dynamic Interface:** Built with `Bubble Tea` and `Lipgloss`, the UI adapts to your terminal size.
