@@ -16,7 +16,7 @@
 * **Navigation:** Move through the file list with the keyboard arrows or mouse wheel.
 * **Filtering:** Press `/` to filter the file list by query.
 * **Event Highlighting:** For easy noting the new ones.
-* **Discard atomic events:** Ephemeral file saving events are counted but hidden for clarity. Also hides deleted files after a timeout.
+* **Discard atomic:** Ephemeral file saving events are counted but hidden for clarity. Also hides deleted files after a timeout.
 
 
 ## Requirements
@@ -31,7 +31,7 @@ You have several methods to install `tea_watch`.
 
 ### Method 1: Automatic Script (Linux & macOS)
 
-Easiest and fastest. Simply copy and paste this line into your terminal. The script will detect your OS, download the latest version, install it, write a default config.toml file (at ~/.config/tea_watch) and attempt to set up a keyboard shortcut (`Alt+W`) automatically.
+Easiest and fastest. Simply copy and paste this line into your terminal. The script will detect your OS, download the latest version, install it (at ~/.local/bin), write a default config.toml file (at ~/.config/tea_watch) and attempt to set up a keyboard shortcut (`Alt+w`) automatically.
 
 ```bash
 curl -sSL https://raw.githubusercontent.com/gas/tea_watch/main/install.sh | bash
@@ -54,7 +54,7 @@ This method gives you full control. You download the binary and place it whereve
 1.  Download the file for your system from the [Releases page](https://github.com/gas/tea_watch/releases).
 2.  Unzip it.
 3.  Make the file executable (on Linux & macOS): `chmod +x tea_watch`
-4.  (Recommended) Move the file to a directory in your `$PATH`, for example: `sudo mv tea_watch /usr/local/bin/`
+4.  (Recommended) Move the file to a directory in your `$PATH`, for example: `sudo mv tea_watch ~/.local/bin/`
 
 ---
 

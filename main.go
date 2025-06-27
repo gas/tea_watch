@@ -633,6 +633,15 @@ func (m model) View() string {
 			fileStyle = deletedFileStyle
 		}
 		
+		// evitamos saltos de línea
+		fileColumnStyle := fileStyle.
+					MaxWidth(fileColWidth). 
+					Inline(true)           
+
+		// Renderizamos la columna del fichero con el nuevo estilo de truncado
+		fileColumnStr := fileColumnStyle.Render(fileNameStr)
+
+
 		// Unir columnas de contadores (ajustamos el ancho a 5 para que coincida con la cabecera)
 		counts := lipgloss.JoinHorizontal(
 			lipgloss.Left,
@@ -645,9 +654,9 @@ func (m model) View() string {
 
 		rowStr := lipgloss.JoinHorizontal(
 			lipgloss.Bottom,
-			fileStyle.Width(fileColWidth).Render(fileNameStr),
-			counts,
+			lipgloss.NewStyle().Width(fileColWidth).Render(fileColumnStr),			counts,
 		)
+//			fileStyle.Width(fileColWidth).Render(fileNameStr),
 
 		if m.cursor == idx {
 			//b.WriteString(selectedRowStyle.Width(m.width).Render(rowStr))

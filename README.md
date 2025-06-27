@@ -29,13 +29,12 @@
 
 ### Método 1: Script de Instalación (Linux y macOS)
 
-Esta es la forma más fácil y rápida. Simplemente copia y pega esta línea en tu terminal. El script detectará tu sistema operativo, descargará la última versión, la instalará en `/usr/local/bin` y te pedirá la contraseña si es necesario.
+Esta es la forma más fácil y rápida. Simplemente copia y pega esta línea en tu terminal. El script detectará tu sistema operativo, descargará la última versión, la instalará en `~/.local/bin`, creará un archivo config.toml (en `~/.config/tea_watch`) y creará el atajo de teclado (`Alt+w`) automáticamente.
 
 ```bash  
 curl -sSL https://raw.githubusercontent.com/gas/tea_watch/main/install.sh | bash
 ```
-
-El script añadirá un atajo de teclado ALT+w para ejecutarse en el directorio actual (bash y zsh)
+Cuando termine, recarga tu terminal con `source ~/.bashrc` (o `~/.zshrc`) para que el atajo funcione.
 
 ### Método 2: Con go install (para Desarrolladores y Vibe Coders)
 
@@ -53,7 +52,7 @@ Puedes descargar el binario precompilado para tu sistema operativo desde la [pá
 1.  Descarga el archivo correspondiente a tu sistema (ej. `tea_watch-linux-amd64.tar.gz`).
 2.  Descomprímelo.
 3.  Haz el fichero ejecutable: `chmod +x tea_watch`
-4.  (Opcional, recomendado) Mueve el fichero a un directorio en tu `$PATH` para poder ejecutarlo desde cualquier lugar: `sudo mv tea_watch /usr/local/bin/`
+4.  (Opcional, recomendado) Mueve el fichero a un directorio en tu `$PATH` para poder ejecutarlo desde cualquier lugar: `sudo mv tea_watch ~/.local/bin/`
 5.  (Opcional, recomendado) Crea un binding con un atajo de teclado CTRL+
 
 
