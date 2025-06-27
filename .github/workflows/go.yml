@@ -1,20 +1,23 @@
 name: Go Build & Test
-    
-    on: [push, pull_request]
-    
-    jobs:
-      build:
-        runs-on: ubuntu-latest
-        steps:
-        - uses: actions/checkout@v3
-    
-        - name: Set up Go
-          uses: actions/setup-go@v4
-          with:
-            go-version: '1.23.0'
-    
-        - name: Build
-          run: go build -v ./...
-    
-        - name: Test
-          run: go test -v ./...
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        # Usamos una versión más estándar para máxima compatibilidad.
+        # '1.22' es una excelente opción.
+        go-version: '1.22'
+
+    - name: Build
+      run: go build -v ./...
+
+    - name: Test
+      run: go test -v ./...
