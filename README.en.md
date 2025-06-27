@@ -20,7 +20,7 @@
 ## Requirements
 
 * **(Recommended)** A [Nerd Font](https://www.nerdfonts.com/) installed and configured in your terminal to correctly display icons.
-* If you don't use a Nerd Font, don't worry! The application will run in an alternative ASCII mode.
+* If you don't use a Nerd Font, don't worry! The application can run in pure ASCII mode (flag *--nerd-fonts=false*).
 
 ## Installation
 

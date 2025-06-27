@@ -19,7 +19,7 @@
 ## Recomendaciones
 
 * Una [Nerd Font](https://www.nerdfonts.com/) instalada y configurada en tu terminal para visualizar correctamente los iconos.
-* Si no usas Nerd Font, tea_watch puede funcionar en modo ASCII (flag *--no-nerd-font*).
+* Si no usas Nerd Font, tea_watch puede funcionar en modo ASCII (flag *--nerd-fonts=false*).
 
 ## Instalación
 
