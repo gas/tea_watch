@@ -112,23 +112,33 @@ if [ -n "$SHELL_CONFIG" ]; then
     # Usamos grep para buscar nuestro comentario. Si no lo encuentra, añade el atajo.
     if ! grep -q "$COMMENT_TAG" "$SHELL_CONFIG"; then
         echo "Añadiendo el atajo 'Alt+w' a tu fichero ${SHELL_CONFIG}..."
-        # Añade un salto de línea para separar
-        echo '' >> "$SHELL_CONFIG"
-        echo "$COMMENT_TAG (añadido por el script de instalación)" >> "$SHELL_CONFIG"
+
+        # Usamos cat con un Here Document (<< EOL) para escribir en el fichero
+        # sin problemas de comillas.
+
+        # Primero, añadimos una línea en blanco y el comentario
+        cat >> "$SHELL_CONFIG" << EOL
+
+$COMMENT_TAG (añadido por el script de instalación)
+EOL
 
         # Lógica para BASH
         if [ "$CURRENT_SHELL" = "bash" ]; then
-            echo 'bind -x '"'"'"\ew": "tea_watch"'"' >> "$SHELL_CONFIG"
+            cat >> "$SHELL_CONFIG" << EOL
+bind -x '"\\ew": "tea_watch"'
+EOL
         fi
 
         # Lógica para ZSH
         if [ "$CURRENT_SHELL" = "zsh" ]; then
-            echo 'tea_watch_widget() {' >> "$SHELL_CONFIG"
-            echo '  tea_watch' >> "$SHELL_CONFIG"
-            echo '  zle reset-prompt' >> "$SHELL_CONFIG"
-            echo '}' >> "$SHELL_CONFIG"
-            echo 'zle -N tea_watch_widget' >> "$SHELL_CONFIG"
-            echo "bindkey '\ew' tea_watch_widget" >> "$SHELL_CONFIG"
+            cat >> "$SHELL_CONFIG" << EOL
+tea_watch_widget() {
+  tea_watch
+  zle reset-prompt
+}
+zle -N tea_watch_widget
+bindkey '\ew' tea_watch_widget
+EOL
         fi
 
         echo "¡Atajo añadido! Por favor, reinicia tu terminal o ejecuta 'source ${SHELL_CONFIG}'"
