@@ -25,7 +25,8 @@ fi
 
 # --- LÓGICA DE DETECCIÓN DE FORMATO ---
 # 3. Determinar el nombre del fichero, la extensión y el comando de extracción
-FILENAME_BASE="tea_watch_${LATEST_RELEASE}-${OS}-${ARCH}"
+# FILENAME_BASE="tea_watch_${LATEST_RELEASE}-${OS}-${ARCH}"
+FILENAME_BASE="tea_watch-${OS}-${ARCH}"
 EXT=""
 EXTRACT_CMD=""
 BIN_NAME="tea_watch" # Nombre del binario dentro del archivo
