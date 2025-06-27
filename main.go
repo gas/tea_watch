@@ -16,6 +16,7 @@ import (
 
 // --- CONSTANTES ---
 const maxViewHeight = 10 // Altura máxima de la lista antes de hacer scroll
+const deleteTimeout = 30 * time.Second 
 
 // --- ICONOS (requiere Nerd Font) ---
 const (
@@ -251,8 +252,15 @@ func (m model) Init() tea.Cmd {
 func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case time.Time:
-		// Este es el mensaje del Tick. No necesitamos hacer nada con él,
-		// solo devolver un comando nil para que la vista se vuelva a renderizar.
+		// Con cada tick, un fichero borrado puede desaparecer, así que recalculamos y sujetamos el cursor.
+		visibleCount := len(m.getVisiblePaths())
+		if m.cursor >= visibleCount {
+			if visibleCount > 0 {
+				m.cursor = visibleCount - 1
+			} else {
+				m.cursor = 0
+			}
+		}
 		return m, nil
 
 	case tea.WindowSizeMsg:
@@ -274,6 +282,15 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				// Añadimos el caracter tecleado al filtro
 				m.filter += msg.String()
 			}
+			visibleCount := len(m.getVisiblePaths())
+			if m.cursor >= visibleCount {
+				// Si hay resultados, lo ponemos en el último. Si no, en 0.
+				if visibleCount > 0 {
+					m.cursor = visibleCount - 1
+				} else {
+					m.cursor = 0
+				}
+			}			
 			return m, nil // Salimos para no procesar otras teclas
 		}
 
@@ -296,7 +313,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			}
 		case "down", "j":
-			if m.cursor < len(m.sortedPaths)-1 {
+			if m.cursor < len(m.getVisiblePaths())-1 {
 				m.cursor++
 				// Ajustar scroll si el cursor sale por abajo de la vista
 				if m.cursor >= m.scrollOffset+maxViewHeight {
@@ -309,57 +326,69 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.lastError = msg.err.Error()
 
 	case eventMsg:
-
-		// Usamos filepath.Base para obtener solo el nombre del fichero.
+		// --- PASO 1: Ignorar eventos que no nos interesan ---
 		if strings.HasPrefix(filepath.Base(msg.Name), ".goutputstream-") {
 			m.atomicEvents++
-			// Importante: Re-armamos la escucha y terminamos el procesamiento para este evento.
 			return m, m.watchEvents()
 		}
 
-		m.totalEvents++ 
-
-		// Normalizar la ruta del evento
+		m.totalEvents++
 		path := msg.Name
 
-	// Si es un evento de creación para un nuevo directorio, hay que añadirlo al watcher.
-		if msg.Op&fsnotify.Create == fsnotify.Create {
-			if info, err := os.Stat(path); err == nil && info.IsDir() {
-				// No necesitamos llamar a addPathRecursively, solo añadir la nueva carpeta.
-				if err := m.watcher.Add(path); err != nil {
-					m.lastError = fmt.Sprintf("No se pudo vigilar el nuevo dir: %v", err)
-				}
-			}
-		}
-
-		// Obtener o crear la entrada para este fichero.
-		// Esto es importante para ficheros creados después del inicio.
+		// --- PASO 2: Asegurarnos de que el fichero/directorio existe en nuestro mapa ---
+		// Si es un evento para una ruta que no conocemos (un fichero totalmente nuevo),
+		// la creamos en nuestro mapa de eventos ahora.
 		if _, ok := m.events[path]; !ok {
 			isDir := false
 			if info, err := os.Stat(path); err == nil && info.IsDir() {
 				isDir = true
 			}
 			m.events[path] = &fileEventInfo{path: path, isDir: isDir}
-			m.updateSortedPaths() // Reordenar si hay un nuevo elemento
+			m.updateSortedPaths() // Reordenar la lista porque hay un nuevo elemento
 		}
-		
 		info := m.events[path]
-		info.lastEvent = time.Now()
 
-		// Manejar los contadores de eventos
+		// --- PASO 3: Lógica principal de eventos (unificada) ---
+
+		// Si es un evento de CREACIÓN...
 		if msg.Op&fsnotify.Create == fsnotify.Create {
 			info.create++
-			info.deleted = false // Un fichero recreado ya no está borrado
-		}
-		if msg.Op&fsnotify.Write == fsnotify.Write {
-			info.write++
-		}
-		if msg.Op&fsnotify.Chmod == fsnotify.Chmod {
-			info.chmod++
+			info.deleted = false
+			info.lastEvent = time.Now()
+
+			// Y si lo que se ha creado es un DIRECTORIO...
+			if info.isDir {
+				// 1. Lo añadimos al watcher para vigilar su interior.
+				m.watcher.Add(path) // Ignoramos errores aquí por simplicidad
+
+				// 2. Escaneamos su contenido. ESTO SOLUCIONA EL PROBLEMA DE DIRECTORIOS RENOMBRADOS.
+				// Al "descubrir" su contenido, los ficheros que se "movieron" con él aparecerán en la lista.
+				filepath.Walk(path, func(walkPath string, fileInfo os.FileInfo, err error) error {
+					if err != nil || walkPath == path { // No procesar el directorio padre de nuevo
+						return nil
+					}
+					if _, exists := m.events[walkPath]; !exists {
+						m.events[walkPath] = &fileEventInfo{path: walkPath, isDir: fileInfo.IsDir(), lastEvent: time.Now()}
+					}
+					return nil
+				})
+				m.updateSortedPaths() // Reordenar de nuevo por si hemos añadido más cosas
+			}
 		}
 
-		// --- LÓGICA DE BORRADO Y RENOMBRADO MEJORADA ---
-		// Tanto REMOVE como RENAME implican que la ruta original ya no existe.
+		// Si es un evento de ESCRITURA...
+		if msg.Op&fsnotify.Write == fsnotify.Write {
+			info.write++
+			info.lastEvent = time.Now()
+		}
+
+		// Si es un evento de PERMISOS...
+		if msg.Op&fsnotify.Chmod == fsnotify.Chmod {
+			info.chmod++
+			info.lastEvent = time.Now()
+		}
+
+		// Si es un evento de BORRADO o RENOMBRADO...
 		isRemoveOrRename := msg.Op&fsnotify.Remove == fsnotify.Remove || msg.Op&fsnotify.Rename == fsnotify.Rename
 		if isRemoveOrRename {
 			if msg.Op&fsnotify.Remove == fsnotify.Remove {
@@ -368,32 +397,53 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if msg.Op&fsnotify.Rename == fsnotify.Rename {
 				info.rename++
 			}
-			
 			info.deleted = true
+			info.lastEvent = time.Now()
 
-			// Si la entrada que se ha ido era un directorio, marcamos todo su contenido como borrado.
+			// Y si lo que se ha ido era un DIRECTORIO, marcamos sus hijos como borrados.
 			if info.isDir {
-				// La ruta base debe terminar con el separador de sistema para evitar falsos positivos
-				// (p.ej. no confundir "/home/user/app" con "/home/user/application").
 				dirPathPrefix := info.path + string(os.PathSeparator)
-				
-				// Iteramos sobre una copia de las claves para no modificar el mapa mientras lo recorremos
 				for eventPath, eventInfo := range m.events {
-					// Comprobamos si la ruta de un evento empieza por la ruta del directorio borrado.
-					// También nos aseguramos de no procesar el directorio en sí mismo otra vez.
 					if eventPath != info.path && strings.HasPrefix(eventPath, dirPathPrefix) {
 						eventInfo.deleted = true
+						eventInfo.lastEvent = time.Now() // Actualizamos también para que se oculten con el padre
 					}
 				}
 			}
 		}
 
-		// **CORRECCIÓN CRÍTICA:** Volvemos a armar la escucha del watcher.
-		// Esto es necesario porque el comando `watchEvents` termina después de enviar un mensaje.
+		// --- PASO 4: Devolvemos el control a Bubble Tea ---
+		// Al final de todo el procesamiento, re-armamos la escucha.
 		return m, m.watchEvents()
+
 	}
 
 	return m, nil
+}
+
+// getVisiblePaths devuelve la lista de rutas que deben ser visibles en la UI.
+// Contiene la lógica de filtrado y de ocultar borrados antiguos.
+func (m *model) getVisiblePaths() []string {
+	var visiblePaths []string
+
+	// Lógica de filtrado
+	if m.isFiltering {
+		for _, path := range m.sortedPaths {
+			if strings.Contains(strings.ToLower(filepath.Base(path)), strings.ToLower(m.filter)) {
+				visiblePaths = append(visiblePaths, path)
+			}
+		}
+	} else {
+		// Lógica para ocultar borrados después de un tiempo
+		for _, path := range m.sortedPaths {
+			event := m.events[path]
+			if event.deleted && time.Since(event.lastEvent) > deleteTimeout {
+				continue // No añadir a la lista visible
+			}
+			visiblePaths = append(visiblePaths, path)
+		}
+	}
+	return visiblePaths
 }
 
 // updateSortedPaths recalcula y ordena la lista de rutas.
@@ -450,18 +500,7 @@ func (m model) View() string {
 
 	// --- 2. RENDERIZAR LISTA DE FICHEROS ---
 
-	// Primero, determinamos la lista de rutas a mostrar
-	var visiblePaths []string
-	if m.isFiltering {
-		for _, path := range m.sortedPaths {
-			// Usamos el nombre base para el filtro (más intuitivo)
-			if strings.Contains(strings.ToLower(filepath.Base(path)), strings.ToLower(m.filter)) {
-				visiblePaths = append(visiblePaths, path)
-			}
-		}
-	} else {
-		visiblePaths = m.sortedPaths
-	}
+	visiblePaths := m.getVisiblePaths()
 	
 	// A PARTIR DE AQUÍ, TODAS LAS REFERENCIAS A 'm.sortedPaths'
 	// DEBEN SER A 'visiblePaths'.
