@@ -2,8 +2,8 @@
 #
 # Script de instalación para tea_watch
 #
-# Este script descarga el binario apropiado de la última release de GitHub
-# y lo instala en /usr/local/bin. También intenta añadir un atajo de teclado.
+# Este script descarga el binario apropiado (tar.gz o zip) de la última
+# release de GitHub y lo instala en /usr/local/bin.
 
 set -e # Salir inmediatamente si un comando falla
 
@@ -16,29 +16,57 @@ case $ARCH in
   arm64) ARCH="arm64" ;;
 esac
 
-# 2. Encontrar la última versión y construir la URL de descarga
+# 2. Encontrar la última versión
 LATEST_RELEASE=$(curl -s "https://api.github.com/repos/gas/tea_watch/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
 if [ -z "$LATEST_RELEASE" ]; then
   echo "Error: No se pudo encontrar la última release de tea_watch."
   exit 1
 fi
-DOWNLOAD_URL="https://github.com/gas/tea_watch/releases/download/${LATEST_RELEASE}/tea_watch-${OS}-${ARCH}.tar.gz"
+
+# --- LÓGICA DE DETECCIÓN DE FORMATO ---
+# 3. Determinar el nombre del fichero, la extensión y el comando de extracción
+FILENAME_BASE="tea_watch_${LATEST_RELEASE}-${OS}-${ARCH}"
+EXT=""
+EXTRACT_CMD=""
+BIN_NAME="tea_watch" # Nombre del binario dentro del archivo
+
+if [ "$OS" = "windows" ]; then
+    EXT=".zip"
+    # Unzip y extrae solo el .exe a la carpeta temporal
+    EXTRACT_CMD="unzip -j"
+    BIN_NAME="tea_watch.exe"
+else
+    EXT=".tar.gz"
+    # Tar y extrae solo el binario, quitando la estructura de carpetas
+    EXTRACT_CMD="tar -xzf"
+fi
+
+DOWNLOAD_URL="https://github.com/gas/tea_watch/releases/download/${LATEST_RELEASE}/${FILENAME_BASE}${EXT}"
 
 echo "Descargando tea_watch ${LATEST_RELEASE} para ${OS}/${ARCH}..."
 
-# 3. Descargar y descomprimir
+# 4. Descargar y descomprimir
 TEMP_DIR=$(mktemp -d)
-curl -L -o "${TEMP_DIR}/tea_watch.tar.gz" "$DOWNLOAD_URL"
-tar -xzf "${TEMP_DIR}/tea_watch.tar.gz" -C "${TEMP_DIR}"
+# Descargamos el archivo con su nombre correcto
+curl -fL -o "${TEMP_DIR}/${FILENAME_BASE}${EXT}" "$DOWNLOAD_URL"
 echo "Descarga completa."
 
-# 4. Instalar el binario
-echo "Instalando tea_watch en /usr/local/bin (puede requerir contraseña)..."
-sudo mv "${TEMP_DIR}/tea_watch" /usr/local/bin/tea_watch
+# Extraemos el contenido dentro del directorio temporal
+# La lógica ahora maneja ambos formatos
+if [ "$OS" = "windows" ]; then
+    ${EXTRACT_CMD} "${TEMP_DIR}/${FILENAME_BASE}${EXT}" "${BIN_NAME}" -d "${TEMP_DIR}"
+else
+    # Para tar, extraemos solo el binario que nos interesa
+    ${EXTRACT_CMD} "${TEMP_DIR}/${FILENAME_BASE}${EXT}" -C "${TEMP_DIR}" --strip-components=1 "${BIN_NAME}"
+fi
+
+# 5. Instalar el binario
+echo "Instalando ${BIN_NAME} en /usr/local/bin (puede requerir contraseña)..."
+sudo mv "${TEMP_DIR}/${BIN_NAME}" "/usr/local/bin/tea_watch" # Siempre se instala como 'tea_watch'
 rm -r "$TEMP_DIR" # Limpiar ficheros temporales
 echo "¡tea_watch instalado correctamente!"
 
-# 5. Crear fichero de configuración por defecto si no existe
+# 6. Crear fichero de configuración por defecto si no existe
 CONFIG_DIR="$HOME/.config/tea_watch"
 if [ ! -d "$CONFIG_DIR" ]; then
     echo "Creando directorio de configuración en ${CONFIG_DIR}..."
@@ -68,7 +96,7 @@ nerd_fonts = true
 EOL
 fi
 
-# 6. Intentar configurar el atajo de teclado (la parte más compleja)
+# 7. Intentar configurar el atajo de teclado (la parte más compleja)
 SHELL_CONFIG=""
 CURRENT_SHELL=$(basename "$SHELL")
 
