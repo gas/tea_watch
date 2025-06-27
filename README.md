@@ -3,24 +3,27 @@
 ![Go Build & Test](https://github.com/gas/tea_watch/actions/workflows/go.yml/badge.svg) ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg) ![GitHub release (latest by date)](https://img.shields.io/github/v/release/gas/tea_watch) 
 [English README](README.en.md)
 
-`tea_watch` es una utilidad de terminal, escrita en Go con lipgloss, para monitorizar cambios en el sistema de ficheros en tiempo real. Muy útil para cualquier proceso que comience a modificar muchos archivos (Gemini-cli, no miro para nadie...).
+`tea_watch` es una utilidad de terminal, escrita en Go con lipgloss, para monitorizar cambios en el sistema de ficheros en tiempo real. Chequea y cuenta modificaciones de archivos en el directorio actual.
 
 ![teawatch en accion](https://github.com/user-attachments/assets/cc4520f1-454f-4124-8c7d-477d4697807f?raw=true)
 
+
 ## Características
 
-* **Monitorización en Tiempo Real:** Usa `fsnotify` para una detección de eventos eficiente y nativa.
-* **Interfaz Clara y Dinámica:** Construida con `Bubble Tea` y `Lipgloss`, la interfaz se adapta al tamaño de tu terminal.
-* **Contadores de Eventos:** Visualiza cuántas veces se ha creado, escrito, renombrado o borrado un fichero.
-* **Navegación Intuitiva:** Muévete por la lista de ficheros con las flechas del teclado o la rueda del ratón.
-* **Filtrado en Tiempo Real:** Pulsa `/` para empezar a escribir y filtrar la lista de ficheros al instante.
-* **Resaltado de Eventos:** Los ficheros con cambios recientes se resaltan sutilmente para llamar tu atención.
-* **Gestión Inteligente:** Agrupa eventos "atómicos" (de guardado seguro) y oculta los ficheros borrados tras un tiempo para mantener la vista limpia.
+* **En Tiempo Real:** Usa `fsnotify` para una detección de eventos eficiente y nativa.
+* **Interfaz Dinámica:** Construida con `Bubble Tea` y `Lipgloss`, la interfaz se adapta al terminal.
+* **Contadores de Eventos:** Visualiza y cuenta las modificaciones de archivos (creado, escrito, renombrado, ...)
+* **Navegación:** Con las flechas del teclado o la rueda del ratón.
+* **Filtrado:** Pulsa `/` para filtrar el listado por nombre de archivo.
+* **Resaltado:** Los ficheros con cambios recientes se resaltan.
+* **Eventos atómicos:** Los eventos efímeros (de guardado seguro,...) se cuentan al pie pero sus archivos no se muestran. Los ficheros borrados se ocultan tras un tiempo para mantener la vista limpia.
+
 
 ## Recomendaciones
 
 * Una [Nerd Font](https://www.nerdfonts.com/) instalada y configurada en tu terminal para visualizar correctamente los iconos.
 * Si no usas Nerd Font, tea_watch puede funcionar en modo ASCII (flag *--nerd-fonts=false*).
+
 
 ## Instalación
 
@@ -43,7 +46,6 @@ Si tienes el entorno de Go instalado en tu máquina, puedes instalar tea_watch c
 go install github.com/gas/tea_watch@latest  
 ```
 
-
 ### Método 3: Instalación Manual (Todas las Plataformas)
 
 Puedes descargar el binario precompilado para tu sistema operativo desde la [página de Releases](https://github.com/gas/tea_watch/releases).
@@ -53,6 +55,7 @@ Puedes descargar el binario precompilado para tu sistema operativo desde la [pá
 3.  Haz el fichero ejecutable: `chmod +x tea_watch`
 4.  (Opcional, recomendado) Mueve el fichero a un directorio en tu `$PATH` para poder ejecutarlo desde cualquier lugar: `sudo mv tea_watch /usr/local/bin/`
 5.  (Opcional, recomendado) Crea un binding con un atajo de teclado CTRL+
+
 
 ## Uso
 
@@ -81,6 +84,7 @@ tea_watch /ruta/a/tu/directorio
 | `q` / `Ctrl+C`    | Salir del programa                   |
 
 
+
 ## Localización (Traducción)
 
 Puedes traducir `tea_watch` a cualquier idioma.
@@ -91,14 +95,13 @@ Puedes traducir `tea_watch` a cualquier idioma.
 
 2.  Abre el fichero con un editor de texto. Verás una sección `[strings]` con todas las frases en inglés comentadas.
 
-3.  Descomenta las líneas y traduce el texto al idioma que quieras. Por ejemplo, para francés:
+3.  Descomenta las líneas y traduce el texto si quieres, Ejemplo en francés:
 
     ```toml
     [strings]
     monitoring    = "Surveillance"
     filter_prompt  = "Filtrer: "
     total_events   = "Événements"
-    # ...y así con el resto.
+    # ...etc.
     ```
-4.  Guarda el fichero. ¡La próxima vez que ejecutes `tea_watch`, aparecerá en tu idioma!
 

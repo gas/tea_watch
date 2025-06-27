@@ -3,33 +3,35 @@
 ![Go Build & Test](https://github.com/gas/tea_watch/actions/workflows/go.yml/badge.svg) ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg) ![GitHub release (latest by date)](https://img.shields.io/github/v/release/gas/tea_watch)
 [README en español](README.md)
 
-`tea_watch` is a terminal utility, written in Go with Lipgloss, for monitoring filesystem changes in real-time. It's very useful for any process that starts modifying files (I'm not looking at anyone, Gemini-cli...).
+`tea_watch` is a terminal utility, written in Go with Lipgloss, for monitoring filesystem changes in real-time. Check and count file modifications at current directory.
 
 ![teawatch in action](https://github.com/user-attachments/assets/cc4520f1-454f-4124-8c7d-477d4697807f?raw=true)
 
+
 ## Features
 
-
 * **Real-Time Monitoring:** Uses `fsnotify` for efficient, native event detection.
-* **Clear & Dynamic Interface:** Built with `Bubble Tea` and `Lipgloss`, the UI adapts to your terminal size.
-* **Event Counters:** Visualize how many times a file has been created, written to, renamed, or deleted.
-* **Intuitive Navigation:** Move through the file list with the keyboard arrows or the mouse wheel.
-* **Real-Time Filtering:** Press `/` to start typing and instantly filter the file list.
-* **Event Highlighting:** Files with recent changes are subtly highlighted to draw your attention.
-* **Intelligent Management:** Groups "atomic" save events and hides deleted files after a timeout to keep the view clean.
+* **Slick Interface:** TUI built with `Bubble Tea` and `Lipgloss`, fits your terminal size.
+* **Event Counters:** Visualize and count file modifications since created (written to or renamed).
+* **Navigation:** Move through the file list with the keyboard arrows or mouse wheel.
+* **Filtering:** Press `/` to filter the file list by query.
+* **Event Highlighting:** For easy noting the new ones.
+* **Discard atomic events:** Ephemeral file saving events are counted but hidden for clarity. Also hides deleted files after a timeout.
+
 
 ## Requirements
 
 * **(Recommended)** A [Nerd Font](https://www.nerdfonts.com/) installed and configured in your terminal to correctly display icons.
-* If you don't use a Nerd Font, don't worry! The application can run in pure ASCII mode (flag *--nerd-fonts=false*).
+* If you don't use a Nerd Font, it can run in ASCII mode (flag *--nerd-fonts=false*).
+
 
 ## Installation
 
-You have several methods to install `tea_watch`. Choose the one that best suits you.
+You have several methods to install `tea_watch`.
 
 ### Method 1: Automatic Script (Linux & macOS)
 
-This is the easiest and fastest way. Simply copy and paste this line into your terminal. The script will detect your OS, download the latest version, install it, and attempt to set up a keyboard shortcut (`Alt+W`) automatically.
+Easiest and fastest. Simply copy and paste this line into your terminal. The script will detect your OS, download the latest version, install it, write a default config.toml file (at ~/.config/tea_watch) and attempt to set up a keyboard shortcut (`Alt+W`) automatically.
 
 ```bash
 curl -sSL https://raw.githubusercontent.com/gas/tea_watch/main/install.sh | bash
@@ -38,7 +40,7 @@ After it finishes, restart your terminal or run `source ~/.bashrc` (or `~/.zshrc
 
 ### Method 2: With `go install` (if you have Go installed)
 
-This method compiles and installs the binary, but **it does not configure the keyboard shortcut**.
+This method compiles and installs the binary, but **it does not configure the keyboard shortcut** or create the configuration file. You can copy the [config.example.toml](config.example.toml) from this repository.
 
 ```bash
 go install github.com/gas/tea_watch@latest
@@ -55,6 +57,7 @@ This method gives you full control. You download the binary and place it whereve
 4.  (Recommended) Move the file to a directory in your `$PATH`, for example: `sudo mv tea_watch /usr/local/bin/`
 
 ---
+
 
 ## Usage
 
@@ -82,6 +85,7 @@ tea_watch /path/to/your/directory
 | `Esc`          | Exit filter mode / Exit the program  |
 | `q` / `Ctrl+C` | Exit the program                     |
 
+
 ## Localization (Translation)
 
 You can translate `tea_watch` to any language.
@@ -92,13 +96,12 @@ You can translate `tea_watch` to any language.
 
 2.  Open the file with a text editor. You will see a `[strings]` section with all the English phrases commented out.
 
-3.  Uncomment the lines and translate the text to the language you want. For example, for French:
+3.  Uncomment the lines and translate them if you want. French example:
 
     ```toml
  [strings]
  monitoring = "Surveillance"
  filter_prompt = "Filtrer: "
  total_events = "Événements"
-    # ...and so on.
+    # ...etc.
  ````
-4. Save the file. Next time you run `tea_watch`, it will appear in your language!
